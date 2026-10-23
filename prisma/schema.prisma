@@ -1,0 +1,63 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum ScheduleStatus {
+  ACTIVE
+  OFF
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+model Booking {
+  id              String           @id @default(cuid())
+  passengerName   String           @map("passenger_name")
+  phoneNumber     String           @map("phone_number")
+  passengerCount  Int              @map("passenger_count")
+  pickupLocation  String           @map("pickup_location")
+  dropoffLocation String           @map("dropoff_location")
+  budget          Decimal          @db.Decimal(10, 2)
+  notes           String?          @db.Text
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  schedules       WeeklySchedule[]
+
+  @@index([passengerName])
+  @@index([phoneNumber])
+  @@index([pickupLocation])
+  @@index([dropoffLocation])
+  @@index([createdAt])
+  @@map("bookings")
+}
+
+model WeeklySchedule {
+  id          String         @id @default(cuid())
+  bookingId   String         @map("booking_id")
+  dayOfWeek   DayOfWeek      @map("day_of_week")
+  status      ScheduleStatus @default(ACTIVE)
+  pickupTime  String?        @map("pickup_time") // HH:mm format e.g. "08:30"
+  dropoffTime String?        @map("dropoff_time") // HH:mm format e.g. "17:30"
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+
+  booking     Booking        @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@unique([bookingId, dayOfWeek])
+  @@index([bookingId])
+  @@map("weekly_schedules")
+}
